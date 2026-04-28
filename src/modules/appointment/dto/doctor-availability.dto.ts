@@ -6,19 +6,19 @@ export class WorkingHoursDto {
   @IsNumber()
   @Min(0)
   @Max(23)
-  from: number;
+  from!: number;
 
   @IsNotEmpty()
   @IsNumber()
   @Min(0)
   @Max(23)
-  to: number;
+  to!: number;
 }
 
 export class OffExceptionDto {
   @IsNotEmpty()
   @IsString()
-  date: string; // Date in Persian calendar
+  date!: string; // Date in Persian calendar
 
   @IsOptional()
   @IsString()
@@ -28,16 +28,16 @@ export class OffExceptionDto {
 export class CreateDoctorAvailabilityDto {
   @IsNotEmpty()
   @IsString()
-  doctorId: string; // Doctor (User) ID
+  doctorId!: string; // Doctor (User) ID
 
   @IsArray()
   @IsNumber({}, { each: true })
-  offDays: number[]; // 0=Saturday, 6=Friday
+  offDays!: number[]; // 0=Saturday, 6=Friday
 
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => WorkingHoursDto)
-  workingHours: WorkingHoursDto;
+  workingHours!: WorkingHoursDto;
 
   @IsOptional()
   @IsNumber()
@@ -78,7 +78,7 @@ export class UpdateDoctorAvailabilityDto {
 export class AddOffExceptionDto {
   @IsNotEmpty()
   @IsString()
-  date: string; // Date in Persian calendar
+  date!: string; // Date in Persian calendar
 
   @IsOptional()
   @IsString()

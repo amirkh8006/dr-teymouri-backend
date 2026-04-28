@@ -4,27 +4,27 @@ import { VisitType } from '../constants/visit-type.enum';
 export class CreateAppointmentDto {
   @IsNotEmpty()
   @IsString()
-  doctorId: string; // Doctor ID
+  doctorId!: string; // Doctor ID
 
   @IsNotEmpty()
   @IsDateString()
-  appointmentDateTime: string; // ISO datetime string
+  appointmentDateTime!: string; // ISO datetime string
 
   @IsNotEmpty()
   @IsEnum(VisitType)
-  visitType: VisitType;
+  visitType!: VisitType;
 
   @IsNotEmpty()
   @IsString()
-  fullName: string;
+  fullName!: string;
 
   @IsNotEmpty()
   @IsString()
-  nationalId: string;
+  nationalId!: string;
 
   @IsNotEmpty()
   @IsBoolean()
-  payNow: boolean;
+  payNow!: boolean;
 
   @IsOptional()
   @IsString()
@@ -34,7 +34,7 @@ export class CreateAppointmentDto {
 export class UpdateAppointmentStatusDto {
   @IsNotEmpty()
   @IsString()
-  status: string;
+  status!: string;
 
   @IsOptional()
   @IsString()
@@ -44,7 +44,7 @@ export class UpdateAppointmentStatusDto {
 export class GetAvailableSlotsDto {
   @IsNotEmpty()
   @IsString()
-  doctorId: string;
+  doctorId!: string;
 
   @IsOptional()
   @IsString()
