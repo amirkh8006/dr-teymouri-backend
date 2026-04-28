@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { RoleModule } from './modules/role/role.module';
+import { UserModule } from './modules/user/user.module';
+import { AppointmentModule } from './modules/appointment/appointment.module';
 import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
 
 @Module({
@@ -15,6 +17,8 @@ import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
     MongodbModule,
     AuthModule,
     RoleModule,
+    UserModule,
+    AppointmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

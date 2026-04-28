@@ -6,8 +6,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 export class AppController {
   @Get()
   @ApiOperation({
-    summary: 'Welcome Route',
-    description: 'روت خوش آمد گویی',
+    summary: 'مسیر خوش آمدگویی',
+    description: 'روت خوش آمدگویی',
   })
   welcome() {
     return {
@@ -18,7 +18,7 @@ export class AppController {
 
   @Get('health')
   @ApiOperation({
-    summary: 'Health Check',
+    summary: 'بررسی سلامت',
     description: 'بررسی سلامت سرویس',
   })
   healthCheck() {
