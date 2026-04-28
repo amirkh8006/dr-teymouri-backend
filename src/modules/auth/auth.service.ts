@@ -1,8 +1,12 @@
-import { Injectable, BadRequestException, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { LoginDto, VerifyOtpDto, SetPasswordDto, LoginWithPasswordDto, RequestPasswordResetDto, ResetPasswordDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  VerifyOtpDto,
+  RegisterUserDto,
+} from './dto/auth.dto';
 import { SmsService } from '../../common/utils/sms.service';
 import { OtpService } from '../../common/utils/otp.service';
 import { UserService } from '../user/user.service';
@@ -232,141 +236,35 @@ export class AuthService {
       statusCode: 200,
       data: {
         token,
-        passwordSet: !!user.password,
-        isProfileCompleted: user.isCompleted,
-      },
-    };
-  }
-
-  async setPassword(userId: string, setPasswordDto: SetPasswordDto) {
-    const { password } = setPasswordDto;
-
-    const user = await this.userService.findById(userId);
-    if (!user) {
-      throw new BadRequestException('کاربر یافت نشد');
-    }
-
-    if (user.password) {
-      throw new ConflictException('رمز عبور قبلا تنظیم شده است');
-    }
-
-    await this.userService.setPassword(userId, password);
-
-    return {
-      success: true,
-      message: 'رمز عبور با موفقیت تنظیم شد',
-      statusCode: 200,
-    };
-  }
-
-  async loginWithPassword(loginWithPasswordDto: LoginWithPasswordDto, userAgent?: string) {
-    const { phoneNumber, password } = loginWithPasswordDto;
-
-    const user = await this.userService.findByPhoneNumber(phoneNumber);
-    if (!user) {
-      throw new BadRequestException('کاربری با این شماره تلفن یافت نشد');
-    }
-
-    if (!user.password) {
-      throw new BadRequestException('کاربر هنوز رمز عبور تنظیم نکرده است');
-    }
-
-    const isPasswordValid = await this.userService.validateUserPasswordByPhoneNumber(phoneNumber, password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('رمز عبور اشتباه است');
-    }
-
-    const payload = { userId: user.id, phoneNumber: user.phoneNumber };
-    const token = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET || 'default-secret-key',
-      expiresIn: '7d',
-    });
-
-    await this.storeSession(token, user.id, userAgent);
-
-    return {
-      success: true,
-      message: 'ورود با موفقیت انجام شد',
-      statusCode: 200,
-      data: {
-        token,
+        registered: !!user.isCompleted,
+        nextStep: user.isCompleted ? 'home' : 'registration',
         user: {
           id: user.id,
           phoneNumber: user.phoneNumber,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          isCompleted: !!user.isCompleted,
         },
       },
     };
   }
 
-  async requestPasswordReset(requestPasswordResetDto: RequestPasswordResetDto) {
-    const { phoneNumber } = requestPasswordResetDto;
-
-    const user = await this.userService.findByPhoneNumber(phoneNumber);
-    if (!user) {
-      throw new BadRequestException('کاربری با این شماره تلفن یافت نشد');
-    }
-
-    if (!user.password) {
-      throw new BadRequestException('کاربر هنوز رمز عبور تنظیم نکرده است. لطفا از طریق ورود با OTP اقدام به تنظیم رمز عبور کنید');
-    }
-
-    const otpExists = await this.otpService.otpExists(phoneNumber);
-    if (otpExists) {
-      const ttl = await this.otpService.getOtpTtl(phoneNumber);
-      throw new BadRequestException(`کد تایید قبلا ارسال شده است. لطفا ${ttl} ثانیه دیگر تلاش کنید.`);
-    }
-
-    const otp = this.otpService.generateOtp();
-    await this.otpService.storeOtp(phoneNumber, otp, 300);
-
-    setImmediate(async () => {
-      try {
-        const smsResult = await this.smsService.sendOtp(phoneNumber, otp);
-        if (!smsResult.success) {
-          this.logger.error(`Failed to send SMS to ${phoneNumber}: ${smsResult.error}`);
-        }
-      } catch (error) {
-        this.logger.error(`Error sending SMS to ${phoneNumber}: ${String(error)}`);
-      }
-    });
+  async register(userId: string, registerUserDto: RegisterUserDto) {
+    const user = await this.userService.completeRegistration(userId, registerUserDto);
 
     return {
       success: true,
-      message: 'کد تایید برای بازیابی رمز عبور ارسال شد',
+      message: 'ثبت نام با موفقیت انجام شد',
       statusCode: 200,
-    };
-  }
-
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const { phoneNumber, otp, newPassword, confirmPassword } = resetPasswordDto;
-
-    if (newPassword !== confirmPassword) {
-      throw new BadRequestException('رمز عبور و تکرار آن یکسان نیستند');
-    }
-
-    const verificationResult = await this.otpService.verifyOtp(phoneNumber, otp);
-    if (!verificationResult.success) {
-      throw new BadRequestException(verificationResult.message);
-    }
-
-    const user = await this.userService.findByPhoneNumber(phoneNumber);
-    if (!user) {
-      throw new BadRequestException('کاربری با این شماره تلفن یافت نشد');
-    }
-
-    if (!user.password) {
-      throw new BadRequestException('کاربر هنوز رمز عبور تنظیم نکرده است. لطفا از طریق ورود با OTP اقدام به تنظیم رمز عبور کنید');
-    }
-
-    await this.userService.setPassword(user.id, newPassword);
-    await this.logoutFromAllDevices(user.id);
-
-    return {
-      success: true,
-      message: 'رمز عبور با موفقیت تغییر یافت. لطفا با رمز عبور جدید وارد شوید',
-      statusCode: 200,
+      data: {
+        registered: true,
+        nextStep: 'home',
+        user: {
+          id: user.id,
+          phoneNumber: user.phoneNumber,
+          isCompleted: user.isCompleted,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      },
     };
   }
 }

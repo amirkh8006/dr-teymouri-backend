@@ -8,7 +8,7 @@ export class CreateRoleDto {
     example: 'مدیر سیستم',
     description: 'نام نقش',
   })
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()

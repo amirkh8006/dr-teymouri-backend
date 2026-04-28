@@ -26,6 +26,27 @@ export class UserService {
     return this.userModel.create(payload);
   }
 
+  async completeRegistration(userId: string, registrationData: Partial<User>): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('کاربر یافت نشد');
+    }
+
+    const { phoneNumber: _phoneNumber, role: _role, isActive: _isActive, isCompleted: _isCompleted, ...updateData } =
+      registrationData;
+
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(userId, { ...updateData, isCompleted: true }, { new: true })
+      .populate('role')
+      .exec();
+
+    if (!updatedUser) {
+      throw new NotFoundException('کاربر یافت نشد');
+    }
+
+    return updatedUser;
+  }
+
   async findById(userId: string): Promise<UserDocument | null> {
     if (!Types.ObjectId.isValid(userId)) {
       return null;

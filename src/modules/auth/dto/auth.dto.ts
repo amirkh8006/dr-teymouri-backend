@@ -1,12 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Length, Matches, MinLength } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  Length,
+  Matches,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { EducationLevel, HousingStatus, JobStatus, MaritalStatus, MealType } from '../../user/user-profile.constants';
 
 export class LoginDto {
   @IsNotEmpty()
   @Length(11)
   @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
   @ApiProperty({ example: '09123456789', description: 'شماره تلفن همراه' })
-  phoneNumber: string;
+  phoneNumber!: string;
 }
 
 export class VerifyOtpDto {
@@ -14,14 +27,14 @@ export class VerifyOtpDto {
   @Length(11)
   @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
   @ApiProperty({ example: '09123456789', description: 'شماره تلفن همراه' })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @IsNotEmpty()
   @Length(6)
   @IsString()
   @ApiProperty({ example: '123456', description: 'کد تایید 6 رقمی' })
   @Matches(/^\d{6}$/)
-  otp: string;
+  otp!: string;
 }
 
 export class SetPasswordDto {
@@ -35,7 +48,7 @@ export class SetPasswordDto {
     example: 'MyPass123!',
     description: 'رمز عبور جدید - حداقل 8 کاراکتر، شامل حروف کوچک، حروف بزرگ، عدد و کاراکتر خاص',
   })
-  password: string;
+  password!: string;
 }
 
 export class LoginWithPasswordDto {
@@ -43,7 +56,7 @@ export class LoginWithPasswordDto {
   @Length(11)
   @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
   @ApiProperty({ example: '09123456789', description: 'شماره تلفن همراه' })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @IsNotEmpty()
   @IsString()
@@ -52,14 +65,14 @@ export class LoginWithPasswordDto {
     example: 'MyPass123!',
     description: 'رمز عبور - حداقل 8 کاراکتر، شامل حروف کوچک، حروف بزرگ، عدد و کاراکتر خاص',
   })
-  password: string;
+  password!: string;
 }
 
 export class TerminateSessionDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ example: '12345678...', description: 'توکن برای حذف' })
-  tokenId: string;
+  tokenId!: string;
 }
 
 export class RequestPasswordResetDto {
@@ -67,7 +80,7 @@ export class RequestPasswordResetDto {
   @Length(11)
   @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
   @ApiProperty({ example: '09123456789', description: 'شماره تلفن همراه' })
-  phoneNumber: string;
+  phoneNumber!: string;
 }
 
 export class ResetPasswordDto {
@@ -75,14 +88,14 @@ export class ResetPasswordDto {
   @Length(11)
   @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
   @ApiProperty({ example: '09123456789', description: 'شماره تلفن همراه' })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @IsNotEmpty()
   @Length(6)
   @IsString()
   @ApiProperty({ example: '123456', description: 'کد تایید 6 رقمی' })
   @Matches(/^\d{6}$/)
-  otp: string;
+  otp!: string;
 
   @IsNotEmpty()
   @IsString()
@@ -94,7 +107,7 @@ export class ResetPasswordDto {
     example: 'MyPass123!',
     description: 'رمز عبور جدید - حداقل 8 کاراکتر، شامل حروف کوچک، حروف بزرگ، عدد و کاراکتر خاص',
   })
-  newPassword: string;
+  newPassword!: string;
 
   @IsNotEmpty()
   @IsString()
@@ -103,5 +116,124 @@ export class ResetPasswordDto {
     example: 'MyPass123!',
     description: 'تکرار رمز عبور جدید',
   })
-  confirmPassword: string;
+  confirmPassword!: string;
+}
+
+export class FoodPreferenceDto {
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Rice', description: 'نوع غذا' })
+  foodType!: string;
+
+  @IsNotEmpty()
+  @IsBoolean()
+  @ApiProperty({ example: true, description: 'مصرف می‌کنم یا مصرف نمی‌کنم' })
+  consumes!: boolean;
+}
+
+export class RegisterUserDto {
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Ali', description: 'نام' })
+  firstName!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Ahmadi', description: 'نام خانوادگی' })
+  lastName!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: '1990-01-01', description: 'تاریخ تولد' })
+  birthDate!: string;
+
+  @IsNotEmpty()
+  @IsEnum(MaritalStatus)
+  @ApiProperty({ enum: MaritalStatus, example: MaritalStatus.married, description: 'Marital status' })
+  maritalStatus!: MaritalStatus;
+
+  @IsNotEmpty()
+  @IsEnum(EducationLevel)
+  @ApiProperty({ enum: EducationLevel, example: EducationLevel.bachelor, description: 'Education level' })
+  educationLevel!: EducationLevel;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Teacher', description: 'شغل' })
+  occupation!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: '2026-04-28', description: 'تاریخ مراجعه' })
+  visitDate!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Instagram', description: 'نحوه آشنایی' })
+  referralSource!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: '1234567890', description: 'کد ملی' })
+  nationalId!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'John Doe', description: 'معرف' })
+  referrer!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Spouse', description: 'چه کسی خرید می‌کند؟' })
+  groceryBuyer!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Spouse', description: 'چه کسی غذا می‌پزد؟' })
+  cookName!: string;
+
+  @IsNotEmpty()
+  @IsEnum(JobStatus)
+  @ApiProperty({ enum: JobStatus, example: JobStatus.employed, description: 'Employment status' })
+  jobStatus!: JobStatus;
+
+  @IsNotEmpty()
+  @IsEnum(HousingStatus)
+  @ApiProperty({ enum: HousingStatus, example: HousingStatus.aprtment, description: 'Housing status' })
+  housingStatus!: HousingStatus;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(MealType, { each: true })
+  @ApiProperty({ enum: MealType, isArray: true, example: [MealType.breakfast, MealType.lunch], description: 'وعده‌هایی که در منزل مصرف می‌کنید' })
+  mealsConsumedAtHome!: MealType[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(MealType, { each: true })
+  @ApiProperty({ enum: MealType, isArray: true, example: [MealType.dinner], description: 'وعده‌های غذایی حذف شده' })
+  removedMeals!: MealType[];
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: 'Tehran, Example St.', description: 'آدرس محل سکونت' })
+  address!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ example: '02112345678', description: 'تلفن ثابت' })
+  landlinePhone!: string;
+
+  @IsNotEmpty()
+  @Length(11)
+  @Matches(new RegExp('^(\\+98|0)?9\\d{9}$'))
+  @ApiProperty({ example: '09123456789', description: 'تلفن همراه' })
+  mobilePhone!: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => FoodPreferenceDto)
+  @ApiProperty({ type: [FoodPreferenceDto], description: 'جدول غذایی' })
+  foodPreferences!: FoodPreferenceDto[];
 }
