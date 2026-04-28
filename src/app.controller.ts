@@ -12,7 +12,7 @@ export class AppController {
   welcome() {
     return {
       statusCode: 200,
-      data: 'Welcome to TechnoGPS API',
+      data: 'Welcome to Dr Teymouri API',
     };
   }
 
