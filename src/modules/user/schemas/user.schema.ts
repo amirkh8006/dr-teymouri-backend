@@ -3,7 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 import { Role } from '../../role/schemas/role.schema';
 import { EducationLevel, HousingStatus, JobStatus, MaritalStatus, MealType } from '../user-profile.constants';
 
-@Schema({ _id: false })
+@Schema({ _id: false, versionKey: false })
 export class FoodPreferenceItem {
   @Prop({ required: true, trim: true })
   foodType?: string;
@@ -16,7 +16,7 @@ export const FoodPreferenceItemSchema = SchemaFactory.createForClass(FoodPrefere
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class User {
   @Prop({ required: true, unique: true, trim: true })
   phoneNumber?: string;

@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { User } from '../../user/schemas/user.schema';
 
-@Schema({ _id: false })
+@Schema({ _id: false, versionKey: false })
 export class WorkingHours {
   @Prop({ required: true, min: 0, max: 23 })
   from: number; // Start hour (0-23)
@@ -13,7 +13,7 @@ export class WorkingHours {
 
 export const WorkingHoursSchema = SchemaFactory.createForClass(WorkingHours);
 
-@Schema({ _id: false })
+@Schema({ _id: false, versionKey: false })
 export class OffException {
   @Prop({ required: true })
   date: Date; // Specific date off (in Persian calendar)
@@ -26,7 +26,7 @@ export const OffExceptionSchema = SchemaFactory.createForClass(OffException);
 
 export type DoctorAvailabilityDocument = HydratedDocument<DoctorAvailability>;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class DoctorAvailability {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true, unique: true })
   doctor: Types.ObjectId; // Reference to User with role=doctor

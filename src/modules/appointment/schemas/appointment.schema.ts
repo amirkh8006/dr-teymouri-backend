@@ -7,7 +7,7 @@ import { PaymentStatus } from '../constants/payment-status.enum';
 
 export type AppointmentDocument = HydratedDocument<Appointment>;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class Appointment {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   patient: Types.ObjectId; // Reference to patient (User)
