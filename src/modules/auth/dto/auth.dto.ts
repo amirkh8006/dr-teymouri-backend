@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
@@ -66,13 +67,6 @@ export class LoginWithPasswordDto {
     description: 'رمز عبور - حداقل 8 کاراکتر، شامل حروف کوچک، حروف بزرگ، عدد و کاراکتر خاص',
   })
   password!: string;
-}
-
-export class TerminateSessionDto {
-  @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ example: '12345678...', description: 'توکن برای حذف' })
-  tokenId!: string;
 }
 
 export class RequestPasswordResetDto {
@@ -177,7 +171,7 @@ export class RegisterUserDto {
   @ApiProperty({ example: '1234567890', description: 'کد ملی' })
   nationalId!: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @ApiProperty({ example: 'John Doe', description: 'معرف' })
   referrer!: string;
@@ -203,13 +197,13 @@ export class RegisterUserDto {
   housingStatus!: HousingStatus;
 
   @IsArray()
-  @ArrayNotEmpty()
+  @IsOptional()
   @IsEnum(MealType, { each: true })
   @ApiProperty({ enum: MealType, isArray: true, example: [MealType.breakfast, MealType.lunch], description: 'وعده‌هایی که در منزل مصرف می‌کنید' })
   mealsConsumedAtHome!: MealType[];
 
   @IsArray()
-  @ArrayNotEmpty()
+  @IsOptional()
   @IsEnum(MealType, { each: true })
   @ApiProperty({ enum: MealType, isArray: true, example: [MealType.dinner], description: 'وعده‌های غذایی حذف شده' })
   removedMeals!: MealType[];

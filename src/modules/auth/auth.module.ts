@@ -10,17 +10,15 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { RoleModule } from '../role/role.module';
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { Role, RoleSchema } from '../role/schemas/role.schema';
-import { Otp, OtpSchema } from './schemas/otp.schema';
-import { AuthSession, AuthSessionSchema } from './schemas/auth-session.schema';
+import { RedisModule } from '../../infrastructure/redis/redis.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Role.name, schema: RoleSchema },
-      { name: Otp.name, schema: OtpSchema },
-      { name: AuthSession.name, schema: AuthSessionSchema },
     ]),
+    RedisModule,
     UserModule,
     forwardRef(() => RoleModule),
     JwtModule.register({

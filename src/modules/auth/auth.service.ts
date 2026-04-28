@@ -1,7 +1,5 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import {
   LoginDto,
   VerifyOtpDto,
@@ -11,71 +9,29 @@ import { SmsService } from '../../common/utils/sms.service';
 import { OtpService } from '../../common/utils/otp.service';
 import { UserService } from '../user/user.service';
 import { RoleService } from '../role/role.service';
-import { AuthSession, AuthSessionDocument } from './schemas/auth-session.schema';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     private readonly smsService: SmsService,
     private readonly otpService: OtpService,
     private readonly userService: UserService,
     private readonly roleService: RoleService,
     private readonly jwtService: JwtService,
-    @InjectModel(AuthSession.name) private readonly authSessionModel: Model<AuthSessionDocument>,
+    private readonly redisService: RedisService,
   ) {}
 
-  private getSessionExpiryDate(days = 7): Date {
-    return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  private getTokenTtlSeconds(days = 7): number {
+    return days * 24 * 60 * 60;
   }
 
-  private getDeviceDisplayName(userAgent?: string): string {
-    if (!userAgent) {
-      return 'Unknown Device';
-    }
-
-    if (userAgent.includes('Android')) {
-      return 'Android Device';
-    }
-    if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
-      return 'iOS Device';
-    }
-    if (userAgent.includes('Windows')) {
-      return 'Windows Device';
-    }
-    if (userAgent.includes('Macintosh')) {
-      return 'Mac Device';
-    }
-
-    return 'Unknown Device';
-  }
-
-  private async storeSession(token: string, userId: string, userAgent?: string): Promise<void> {
-    const uid = new Types.ObjectId(userId);
-
-    await this.authSessionModel.create({
-      token,
-      userId: uid,
-      userAgent: userAgent || 'Unknown',
-      deviceDisplayName: this.getDeviceDisplayName(userAgent),
-      expiresAt: this.getSessionExpiryDate(7),
-    });
-
-    const sessions = await this.authSessionModel.find({ userId: uid }).sort({ createdAt: -1 }).exec();
-    if (sessions.length > 3) {
-      const staleIds = sessions.slice(3).map((s) => s._id);
-      await this.authSessionModel.deleteMany({ _id: { $in: staleIds } }).exec();
-    }
-  }
-
-  async isTokenValid(token: string): Promise<boolean> {
-    const session = await this.authSessionModel.findOne({ token }).exec();
-    return !!session;
+  private async storeSession(token: string, userId: string): Promise<void> {
+    await this.redisService.setToken(token, userId, this.getTokenTtlSeconds(7));
   }
 
   async invalidateToken(token: string): Promise<void> {
-    await this.authSessionModel.deleteOne({ token }).exec();
+    await this.redisService.deleteToken(token);
   }
 
   async logout(token: string): Promise<{ success: boolean; message: string; statusCode: number }> {
@@ -85,104 +41,6 @@ export class AuthService {
       success: true,
       message: 'خروج با موفقیت انجام شد',
       statusCode: 200,
-    };
-  }
-
-  async logoutFromAllDevices(userId: string): Promise<{ success: boolean; message: string; statusCode: number }> {
-    if (!Types.ObjectId.isValid(userId)) {
-      return {
-        success: false,
-        message: 'کاربر نامعتبر است',
-        statusCode: 400,
-      };
-    }
-
-    await this.authSessionModel.deleteMany({ userId: new Types.ObjectId(userId) }).exec();
-
-    return {
-      success: true,
-      message: 'خروج از همه دستگاه‌ها با موفقیت انجام شد',
-      statusCode: 200,
-    };
-  }
-
-  async terminateSession(userId: string, tokenId: string): Promise<{ success: boolean; message: string; statusCode: number }> {
-    if (!Types.ObjectId.isValid(userId)) {
-      return {
-        success: false,
-        message: 'کاربر نامعتبر است',
-        statusCode: 400,
-      };
-    }
-
-    const sessions = await this.authSessionModel.find({ userId: new Types.ObjectId(userId) }).exec();
-    const target = sessions.find((s) => s.token.substring(0, 8) === tokenId.substring(0, 8));
-
-    if (!target) {
-      return {
-        success: false,
-        message: 'نشست یافت نشد',
-        statusCode: 404,
-      };
-    }
-
-    await this.authSessionModel.deleteOne({ _id: target._id }).exec();
-
-    return {
-      success: true,
-      message: 'نشست با موفقیت حذف شد',
-      statusCode: 200,
-    };
-  }
-
-  async getUserActiveSessions(
-    userId: string,
-    currentToken?: string,
-  ): Promise<{
-    success: boolean;
-    data: Array<{
-      issuedAt: string;
-      tokenId: string;
-      userAgent: string;
-      deviceDisplayName: string;
-      browser: string;
-      os: string;
-      device: string;
-      isCurrent?: boolean;
-    }>;
-    statusCode: number;
-    totalSessions: number;
-  }> {
-    if (!Types.ObjectId.isValid(userId)) {
-      return {
-        success: true,
-        data: [],
-        statusCode: 200,
-        totalSessions: 0,
-      };
-    }
-
-    const sessions = await this.authSessionModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .exec();
-
-    const data = sessions.map((session) => ({
-      issuedAt: session.createdAt?.toISOString() || new Date().toISOString(),
-      tokenId: session.token.substring(0, 8) + '...',
-      userAgent: session.userAgent,
-      deviceDisplayName: session.deviceDisplayName,
-      browser: 'Unknown',
-      os: 'Unknown',
-      device: 'Unknown',
-      isCurrent: session.token === currentToken,
-    }));
-
-    return {
-      success: true,
-      data,
-      statusCode: 200,
-      totalSessions: data.length,
     };
   }
 
@@ -208,7 +66,7 @@ export class AuthService {
     };
   }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto, userAgent?: string) {
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const { phoneNumber, otp } = verifyOtpDto;
 
     const verificationResult = await this.otpService.verifyOtp(phoneNumber, otp);
@@ -228,7 +86,7 @@ export class AuthService {
       expiresIn: '7d',
     });
 
-    await this.storeSession(token, user.id, userAgent);
+    await this.storeSession(token, user.id);
 
     return {
       success: true,

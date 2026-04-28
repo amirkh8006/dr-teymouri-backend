@@ -5,7 +5,7 @@ import { CreateRoleDto, UpdateRoleDto, GetRolesQueryDto } from './dto/role.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 
-@ApiTags('Role')
+@ApiTags('نقش')
 @Controller('roles')
 @UseGuards(AuthGuard)
 export class RoleController {
@@ -14,7 +14,7 @@ export class RoleController {
   @Post()
   @RequirePermissions('role:create')
   @ApiOperation({
-    summary: 'Create New Role',
+    summary: 'ایجاد نقش جدید',
     description: 'ایجاد نقش جدید با مجوزهای مشخص شده',
   })
   create(@Body() createRoleDto: CreateRoleDto) {
@@ -24,7 +24,7 @@ export class RoleController {
   @Get()
   @RequirePermissions('role:read')
   @ApiOperation({
-    summary: 'Get All Roles (Paginated)',
+    summary: 'دریافت همه نقش ها (صفحه بندی شده)',
     description: 'دریافت لیست تمام نقش‌ها با قابلیت صفحه‌بندی و جستجو',
   })
   @ApiQuery({
@@ -52,7 +52,7 @@ export class RoleController {
   @Get(':id')
   @RequirePermissions('role:read')
   @ApiOperation({
-    summary: 'Get Role by ID',
+    summary: 'دریافت نقش بر اساس شناسه',
     description: 'دریافت اطلاعات یک نقش بر اساس شناسه',
   })
   @ApiParam({
@@ -67,7 +67,7 @@ export class RoleController {
   @Patch(':id')
   @RequirePermissions('role:update')
   @ApiOperation({
-    summary: 'Update Role',
+    summary: 'به روزرسانی نقش',
     description: 'به‌روزرسانی اطلاعات نقش',
   })
   @ApiParam({
@@ -82,7 +82,7 @@ export class RoleController {
   @Delete(':id')
   @RequirePermissions('role:delete')
   @ApiOperation({
-    summary: 'Delete Role',
+    summary: 'حذف نقش',
     description: 'حذف نقش',
   })
   @ApiParam({

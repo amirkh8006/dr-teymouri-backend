@@ -5,14 +5,12 @@ import { RoleController } from './role.controller';
 import { AuthModule } from '../auth/auth.module';
 import { Role, RoleSchema } from './schemas/role.schema';
 import { User, UserSchema } from '../user/schemas/user.schema';
-import { AuthSession, AuthSessionSchema } from '../auth/schemas/auth-session.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Role.name, schema: RoleSchema },
       { name: User.name, schema: UserSchema },
-      { name: AuthSession.name, schema: AuthSessionSchema },
     ]),
     forwardRef(() => AuthModule),
   ],

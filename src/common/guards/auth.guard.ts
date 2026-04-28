@@ -5,17 +5,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
-import { AuthSession, AuthSessionDocument } from '../../modules/auth/schemas/auth-session.schema';
 import { User, UserDocument } from '../../modules/user/schemas/user.schema';
 import { Role } from '../../modules/role/schemas/role.schema';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
-    @InjectModel(AuthSession.name) private readonly authSessionModel: Model<AuthSessionDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly redisService: RedisService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,8 +26,8 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('توکن احراز هویت یافت نشد');
     }
 
-    const session = await this.authSessionModel.findOne({ token }).exec();
-    if (!session) {
+    const storedUserId = await this.redisService.getUserIdByToken(token);
+    if (!storedUserId) {
       throw new UnauthorizedException('توکن نامعتبر یا منقضی شده است');
     }
 
@@ -36,14 +36,15 @@ export class AuthGuard implements CanActivate {
         secret: process.env.JWT_SECRET || 'default-secret-key',
       });
 
-      if (payload.userId !== session.userId.toString()) {
+      if (payload.userId !== storedUserId) {
+        await this.redisService.deleteToken(token);
         throw new UnauthorizedException('توکن نامعتبر است');
       }
 
       request.userId = payload.userId;
       request.token = token;
     } catch {
-      await this.authSessionModel.deleteOne({ token }).exec();
+      await this.redisService.deleteToken(token);
       throw new UnauthorizedException('توکن نامعتبر است');
     }
 
