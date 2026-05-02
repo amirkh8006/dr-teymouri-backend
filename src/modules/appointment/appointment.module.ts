@@ -16,7 +16,7 @@ import { User, UserSchema } from '../user/schemas/user.schema';
       { name: User.name, schema: UserSchema },
     ]),
   ],
-  controllers: [AppointmentController],
+  controllers: [AppointmentController, AdminAppointmentController],
   providers: [AppointmentService, PersianCalendarService],
   exports: [AppointmentService, PersianCalendarService],
 })
