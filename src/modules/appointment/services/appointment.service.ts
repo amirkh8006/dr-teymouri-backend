@@ -16,7 +16,7 @@ interface AvailableSlot {
 }
 
 interface DaySlots {
-  date: Date;
+  date: string;
   persianDate: string;
   dayName: string;
   dayOfWeek: number;
@@ -107,7 +107,7 @@ export class AppointmentService {
       }
 
       const daySlots: DaySlots = {
-        date: dayInfo.date,
+        date: this.persianCalendarService.getTehranDateIso(dayInfo.date),
         persianDate: dayInfo.persianDate,
         dayName: dayInfo.dayName,
         dayOfWeek: dayInfo.dayOfWeek,
@@ -311,7 +311,7 @@ export class AppointmentService {
   // ============= PRIVATE HELPER METHODS =============
 
   private isDoctorAvailableOnDay(date: Date, availability: DoctorAvailabilityDocument): boolean {
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = this.persianCalendarService.getPersianWeekdayIndex(date);
 
     // Check if day is off
     if (availability.offDays.includes(dayOfWeek)) {
@@ -319,9 +319,9 @@ export class AppointmentService {
     }
 
     // Check if there's an off exception for this date
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = this.persianCalendarService.getTehranDateIso(date);
     for (const exception of availability.offExceptions) {
-      const exceptionDateString = exception.date.toISOString().split('T')[0];
+      const exceptionDateString = this.persianCalendarService.getTehranDateIso(exception.date);
       if (exceptionDateString === dateString) {
         return false;
       }
