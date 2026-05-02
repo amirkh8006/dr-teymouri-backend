@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { RoleService } from './role.service';
 import { CreateRoleDto, UpdateRoleDto, GetRolesQueryDto } from './dto/role.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -7,6 +7,7 @@ import { RequirePermissions } from '../../common/decorators/permissions.decorato
 
 @ApiTags('نقش')
 @Controller('roles')
+@ApiBearerAuth()
 @UseGuards(AuthGuard)
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}

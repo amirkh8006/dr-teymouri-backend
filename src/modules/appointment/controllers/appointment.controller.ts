@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Put, Param, Body, UseGuards, Request, Query, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AppointmentService } from '../services/appointment.service';
 import { CreateAppointmentDto, UpdateAppointmentStatusDto, GetAvailableSlotsDto } from '../dto/appointment.dto';
 import { AuthGuard } from '../../../common/guards/auth.guard';
@@ -18,6 +18,8 @@ export class AppointmentController {
     summary: 'دریافت زمان هاي در دسترس',
     description: 'دریافت اوقات دسترس پزشک برای حداکثر 10 روز آینده با تقویم فارسی',
   })
+  @ApiQuery({ name: 'doctorId', required: true, example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
+  @ApiQuery({ name: 'days', required: false, example: 10, description: 'تعداد روزها (حداکثر 10)' })
   @ApiResponse({ status: 200, description: 'زمان های در دسترس با موفقیت دریافت شد' })
   async getAvailableSlots(@Query('doctorId') doctorId: string, @Query('days') days?: string): Promise<any> {
     const daysCount = days ? Number.parseInt(days, 10) : 10;
@@ -78,6 +80,15 @@ export class AppointmentController {
   @ApiOperation({
     summary: 'لغو نوبت',
     description: 'لغو نوبت مراجعه',
+  })
+  @ApiParam({ name: 'appointmentId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه نوبت' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', example: 'در دسترس نیست' },
+      },
+    },
   })
   @ApiResponse({ status: 200, description: 'نوبت با موفقیت لغو شد' })
   async cancelAppointment(@Param('appointmentId') appointmentId: string, @Body('reason') reason?: string): Promise<any> {

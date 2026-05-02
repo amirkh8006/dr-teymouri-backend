@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Put, Param, Body, UseGuards, Query, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AppointmentService } from '../services/appointment.service';
 import {
   CreateDoctorAvailabilityDto,
@@ -25,6 +25,7 @@ export class AdminAppointmentController {
   @Post('doctors/:doctorId/availability')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions('admin:availability:create')
+  @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({
     summary: 'ایجاد دسترس پذیری پزشک',
     description: 'تنظیم اولیه دسترس پذیری پزشک',
@@ -50,6 +51,7 @@ export class AdminAppointmentController {
    */
   @Get('doctors/:doctorId/availability')
   @RequirePermissions('admin:availability:read')
+  @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({ summary: 'دریافت تنظیمات دسترس پذیری پزشک' })
   async getDoctorAvailability(@Param('doctorId') doctorId: string) {
     const availability = await this.appointmentService.getDoctorAvailability(doctorId);
@@ -66,6 +68,7 @@ export class AdminAppointmentController {
    */
   @Put('doctors/:doctorId/availability')
   @RequirePermissions('admin:availability:update')
+  @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({
     summary: 'به روزرسانی دسترس پذیری پزشک',
     description: 'به روزرسانی ساعات کاری، روزهای تعطیل، مدت زمان و حداکثر ظرفیت نوبت',
@@ -89,6 +92,7 @@ export class AdminAppointmentController {
   @Post('doctors/:doctorId/off-exceptions')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions('admin:availability:off-exception')
+  @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({
     summary: 'افزودن تاریخ استثناء تعطیلی',
     description: 'ثبت تاریخ مشخص برای تعطیلی پزشک (مرخصی، شرایط اضطراری و ...)',
@@ -113,6 +117,9 @@ export class AdminAppointmentController {
    */
   @Get('')
   @RequirePermissions('admin:appointments:read')
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'شماره صفحه' })
+  @ApiQuery({ name: 'limit', required: false, example: 20, description: 'تعداد در هر صفحه' })
+  @ApiQuery({ name: 'status', required: false, example: 'confirmed', description: 'فیلتر بر اساس وضعیت' })
   @ApiOperation({ summary: 'دریافت همه نوبت ها', description: 'دریافت همه نوبت ها با امکان فیلتر وضعیت' })
   async getAllAppointments(
     @Query('page') page?: string,
@@ -135,6 +142,8 @@ export class AdminAppointmentController {
    */
   @Get('doctors/:doctorId')
   @RequirePermissions('admin:appointments:read:doctor')
+  @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
+  @ApiQuery({ name: 'status', required: false, example: 'confirmed', description: 'فیلتر بر اساس وضعیت' })
   @ApiOperation({ summary: 'دریافت نوبت های پزشک' })
   async getDoctorAppointments(
     @Param('doctorId') doctorId: string,
@@ -154,6 +163,7 @@ export class AdminAppointmentController {
    */
   @Put(':appointmentId/status')
   @RequirePermissions('admin:appointments:status:update')
+  @ApiParam({ name: 'appointmentId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه نوبت' })
   @ApiOperation({
     summary: 'به روزرسانی وضعیت نوبت',
     description: 'تغییر وضعیت نوبت (pending, confirmed, completed, cancelled, no_show)',
@@ -177,6 +187,7 @@ export class AdminAppointmentController {
   @Put(':appointmentId/confirm')
   @HttpCode(HttpStatus.OK)
   @RequirePermissions('admin:appointments:confirm')
+  @ApiParam({ name: 'appointmentId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه نوبت' })
   @ApiOperation({ summary: 'تایید نوبت' })
   async confirmAppointment(@Param('appointmentId') appointmentId: string) {
     const appointment = await this.appointmentService.updateAppointmentStatus(appointmentId, {
@@ -196,6 +207,7 @@ export class AdminAppointmentController {
   @Put(':appointmentId/complete')
   @HttpCode(HttpStatus.OK)
   @RequirePermissions('admin:appointments:complete')
+  @ApiParam({ name: 'appointmentId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه نوبت' })
   @ApiOperation({ summary: 'علامت گذاری نوبت به عنوان انجام شده' })
   async completeAppointment(@Param('appointmentId') appointmentId: string) {
     const appointment = await this.appointmentService.updateAppointmentStatus(appointmentId, {

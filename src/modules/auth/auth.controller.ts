@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
   LoginDto,
@@ -37,6 +37,7 @@ export class AuthController {
   @Post('register')
   @UseGuards(AuthGuard)
   @RequirePermissions('auth:register')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'تکمیل ثبت نام',
     description: 'تکمیل اطلاعات کاربر پس از تایید OTP',
@@ -48,6 +49,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(AuthGuard)
   @RequirePermissions('auth:logout')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'خروج',
     description: 'خروج از حساب کاربری در دستگاه فعلی',
