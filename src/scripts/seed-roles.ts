@@ -22,6 +22,7 @@ async function seedRoles() {
           'auth:register',
           'auth:logout',
           'appointment:slots:read',
+          'appointment:doctors:read',
           'appointment:create',
           'appointment:read:own',
           'appointment:cancel:own',
@@ -35,6 +36,14 @@ async function seedRoles() {
           'admin:appointments:status:update',
           'admin:appointments:confirm',
           'admin:appointments:complete',
+          'admin:articles:create',
+          'admin:articles:read',
+          'admin:articles:update',
+          'admin:articles:delete',
+          'admin:pages:create',
+          'admin:pages:read',
+          'admin:pages:update',
+          'admin:pages:delete',
         ],
       },
       {
@@ -57,6 +66,20 @@ async function seedRoles() {
       {
         name: 'user',
         description: 'کاربر عادی',
+        permissions: [
+          'auth:register',
+          'auth:logout',
+          'appointment:slots:read',
+          'appointment:doctors:read',
+          'appointment:create',
+          'appointment:read:own',
+          'appointment:cancel:own',
+          'appointment:read:detail:own',
+        ],
+      },
+      {
+        name: 'doctor',
+        description: 'پزشک',
         permissions: [
           'auth:register',
           'auth:logout',

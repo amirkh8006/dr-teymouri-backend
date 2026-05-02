@@ -3,10 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
+import { Role, RoleDocument } from '../role/schemas/role.schema';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+  ) {}
 
   async findByPhoneNumber(phoneNumber: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ phoneNumber }).populate('role').exec();
@@ -76,5 +80,24 @@ export class UserService {
     }
 
     return bcrypt.compare(password, user.password);
+  }
+
+  async getDoctorsList(): Promise<Array<{ id: string; firstName?: string; lastName?: string }>> {
+    const doctorRole = await this.roleModel.findOne({ name: 'doctor' }).exec();
+    if (!doctorRole) {
+      throw new NotFoundException('نقش پزشک یافت نشد');
+    }
+
+    const doctors = await this.userModel
+      .find({ role: doctorRole._id, isActive: true })
+      .select('firstName lastName')
+      .sort({ firstName: 1, lastName: 1 })
+      .exec();
+
+    return doctors.map((doctor) => ({
+      id: doctor.id,
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+    }));
   }
 }
