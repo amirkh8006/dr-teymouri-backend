@@ -61,6 +61,9 @@ export class User {
   nationalId?: string;
 
   @Prop()
+  manualFileNumber?: string;
+
+  @Prop()
   referrer?: string;
 
   @Prop()

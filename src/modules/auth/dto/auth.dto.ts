@@ -224,6 +224,11 @@ export class RegisterUserDto {
   @ApiProperty({ example: '09123456789', description: 'تلفن همراه' })
   mobilePhone!: string;
 
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: '220515-1', required: false, description: 'Manual file number (ParvandeNumDasti)' })
+  manualFileNumber?: string;
+
   @IsArray()
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
