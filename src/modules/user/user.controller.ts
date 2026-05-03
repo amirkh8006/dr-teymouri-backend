@@ -3,9 +3,10 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @ApiTags('کاربران')
-@Controller('users')
+@Controller('user')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
 export class UserController {
@@ -21,6 +22,31 @@ export class UserController {
       statusCode: 200,
       message: 'لیست پزشکان بازگردانده شد',
       data: doctors,
+    };
+  }
+
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'دریافت اطلاعات کاربر فعلی' })
+  async getMe(@CurrentUser() userId: string) {
+    const user = await this.userService.findById(userId);
+
+    if (!user) {
+      return {
+        statusCode: 404,
+        success: false,
+        message: 'کاربر یافت نشد',
+      };
+    }
+
+    const { password, __v, ...rest } = user.toObject ? user.toObject() : user;
+
+    return {
+      statusCode: 200,
+      message: 'اطلاعات کاربر بازگردانده شد',
+      data: rest,
     };
   }
 }
