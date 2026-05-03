@@ -41,7 +41,7 @@ export class UserController {
       };
     }
 
-    const { password, __v, ...rest } = user.toObject ? user.toObject() : user;
+    const { password, __v, role, ...rest } = user.toObject ? user.toObject() : user;
 
     return {
       statusCode: 200,
