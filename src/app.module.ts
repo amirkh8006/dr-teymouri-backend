@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { AppointmentModule } from './modules/appointment/appointment.module';
 import { ArticleModule } from './modules/article/article.module';
 import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
+import { ContentPageModule } from './modules/content-page/content-page.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
     UserModule,
     AppointmentModule,
     ArticleModule,
+    ContentPageModule
   ],
   controllers: [AppController],
   providers: [AppService],
