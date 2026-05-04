@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RoleModule } from './modules/role/role.module';
 import { UserModule } from './modules/user/user.module';
 import { AppointmentModule } from './modules/appointment/appointment.module';
+import { ArticleModule } from './modules/article/article.module';
 import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { MongodbModule } from './infrastructure/mongodb/mongodb.module';
     RoleModule,
     UserModule,
     AppointmentModule,
+    ArticleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
