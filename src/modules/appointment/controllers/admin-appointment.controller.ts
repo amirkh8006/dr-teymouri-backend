@@ -9,6 +9,7 @@ import {
 import { UpdateAppointmentStatusDto } from '../dto/appointment.dto';
 import { AuthGuard } from '../../../common/guards/auth.guard';
 import { RequirePermissions } from '../../../common/decorators/permissions.decorator';
+import { parseLimitQuery, parseSkipQuery } from '../../../common/utils/pagination-query.util';
 
 @ApiTags('نوبت ها - مدیر')
 @Controller('admin/appointments')
@@ -126,9 +127,8 @@ export class AdminAppointmentController {
     @Query('limit') limit?: string,
     @Query('status') status?: string,
   ) {
-    const parsedSkip = skip ? Number.parseInt(skip, 10) : 0;
-    const skipNum = Number.isNaN(parsedSkip) ? 0 : Math.max(parsedSkip, 0);
-    const limitNum = limit ? Number.parseInt(limit, 10) : 20;
+    const skipNum = parseSkipQuery(skip, 0);
+    const limitNum = parseLimitQuery(limit, 20);
     const result = await this.appointmentService.getAllAppointments(skipNum, limitNum, status as any);
 
     return {

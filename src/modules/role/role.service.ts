@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateRoleDto, UpdateRoleDto, GetRolesQueryDto } from './dto/role.dto';
 import { Role, RoleDocument } from './schemas/role.schema';
+import { MAX_PAGINATION_LIMIT } from '../../common/utils/pagination-query.util';
 
 @Injectable()
 export class RoleService {
@@ -23,8 +24,8 @@ export class RoleService {
   async findAll(query: GetRolesQueryDto): Promise<any> {
     const { skip = 0, limit = 10, search } = query;
 
-    if (limit < 1 || limit > 100) {
-      throw new BadRequestException('تعداد آیتم در هر صفحه باید بین 1 تا 100 باشد');
+    if (limit < 1 || limit > MAX_PAGINATION_LIMIT) {
+      throw new BadRequestException(`تعداد آیتم در هر صفحه باید بین 1 تا ${MAX_PAGINATION_LIMIT} باشد`);
     }
 
     const where: { name?: RegExp } = {};

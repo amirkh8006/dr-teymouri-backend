@@ -25,6 +25,7 @@ import { diskStorage } from 'multer';
 import type { Multer } from 'multer';
 import { existsSync, mkdirSync } from 'fs';
 import { extname, isAbsolute, join, posix } from 'path';
+import { parseLimitQuery, parseSkipQuery } from '../../../common/utils/pagination-query.util';
 
 const DEFAULT_UPLOAD_DIR = 'uploads';
 const UPLOAD_ROUTE = '/uploads';
@@ -101,9 +102,8 @@ export class AdminArticleController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
   ) {
-    const parsedSkip = skip ? Number.parseInt(skip, 10) : 0;
-    const skipNum = Number.isNaN(parsedSkip) ? 0 : Math.max(parsedSkip, 0);
-    const limitNum = limit ? Number.parseInt(limit, 10) : 20;
+    const skipNum = parseSkipQuery(skip, 0);
+    const limitNum = parseLimitQuery(limit, 20);
     const result = await this.articleService.getAdminArticles(skipNum, limitNum, search);
 
     return {

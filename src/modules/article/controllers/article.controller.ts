@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { parseLimitQuery, parseSkipQuery } from '../../../common/utils/pagination-query.util';
 import { ArticleService } from '../services/article.service';
 
 @ApiTags('مقالات - عمومی')
@@ -17,9 +18,8 @@ export class ArticleController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
   ) {
-    const parsedSkip = skip ? Number.parseInt(skip, 10) : 0;
-    const skipNum = Number.isNaN(parsedSkip) ? 0 : Math.max(parsedSkip, 0);
-    const limitNum = limit ? Number.parseInt(limit, 10) : 20;
+    const skipNum = parseSkipQuery(skip, 0);
+    const limitNum = parseLimitQuery(limit, 20);
     const result = await this.articleService.getPublicArticles(skipNum, limitNum, search);
 
     return {
@@ -31,9 +31,9 @@ export class ArticleController {
 
   @Get('suggested')
   @ApiOperation({ summary: 'دریافت مقالات پیشنهادی' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد (حداکثر 100)' })
   async getSuggestedArticles(@Query('limit') limit?: string) {
-    const limitNum = limit ? Number.parseInt(limit, 10) : 10;
+    const limitNum = parseLimitQuery(limit, 10);
     const articles = await this.articleService.getSuggestedArticles(limitNum);
 
     return {
@@ -45,9 +45,9 @@ export class ArticleController {
 
   @Get('popular')
   @ApiOperation({ summary: 'دریافت مقالات محبوب' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد (حداکثر 100)' })
   async getPopularArticles(@Query('limit') limit?: string) {
-    const limitNum = limit ? Number.parseInt(limit, 10) : 10;
+    const limitNum = parseLimitQuery(limit, 10);
     const articles = await this.articleService.getPopularArticles(limitNum);
 
     return {
@@ -59,9 +59,9 @@ export class ArticleController {
 
   @Get('new')
   @ApiOperation({ summary: 'دریافت مقالات جدید' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'حد اکثر تعداد (حداکثر 100)' })
   async getNewArticles(@Query('limit') limit?: string) {
-    const limitNum = limit ? Number.parseInt(limit, 10) : 10;
+    const limitNum = parseLimitQuery(limit, 10);
     const articles = await this.articleService.getNewArticles(limitNum);
 
     return {

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { MAX_PAGINATION_LIMIT } from '../../../common/utils/pagination-query.util';
 
 export class CreateRoleDto {
   @IsString()
@@ -85,7 +86,7 @@ export class GetRolesQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(MAX_PAGINATION_LIMIT)
   limit?: number = 10;
 
   @ApiProperty({
