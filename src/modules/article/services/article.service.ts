@@ -138,8 +138,7 @@ export class ArticleService {
     return article;
   }
 
-  async getAdminArticles(page: number, limit: number, search?: string): Promise<any> {
-    const skip = (page - 1) * limit;
+  async getAdminArticles(skip: number, limit: number, search?: string): Promise<any> {
     const query: any = {};
 
     if (search) {
@@ -161,15 +160,13 @@ export class ArticleService {
       data: articles,
       pagination: {
         total,
-        page,
+        skip,
         limit,
-        pages: Math.ceil(total / limit),
       },
     };
   }
 
-  async getPublicArticles(page: number, limit: number, search?: string): Promise<any> {
-    const skip = (page - 1) * limit;
+  async getPublicArticles(skip: number, limit: number, search?: string): Promise<any> {
     const query: any = { isPublished: true };
 
     if (search) {
@@ -180,7 +177,7 @@ export class ArticleService {
       this.articleModel
         .find(query)
         .select('-content')
-        .populate('author', 'firstName lastName')
+        .populate('author', 'firstName lastName -_id')
         .sort({ publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -192,9 +189,8 @@ export class ArticleService {
       data: articles,
       pagination: {
         total,
-        page,
+        skip,
         limit,
-        pages: Math.ceil(total / limit),
       },
     };
   }
@@ -203,7 +199,7 @@ export class ArticleService {
     return this.articleModel
       .find({ isPublished: true, isSuggested: true })
       .select('-content')
-      .populate('author', 'firstName lastName')
+      .populate('author', 'firstName lastName -_id')
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limit)
       .exec();
@@ -213,7 +209,7 @@ export class ArticleService {
     return this.articleModel
       .find({ isPublished: true })
       .select('-content')
-      .populate('author', 'firstName lastName')
+      .populate('author', 'firstName lastName -_id')
       .sort({ viewCount: -1, publishedAt: -1 })
       .limit(limit)
       .exec();
@@ -223,7 +219,7 @@ export class ArticleService {
     return this.articleModel
       .find({ isPublished: true })
       .select('-content')
-      .populate('author', 'firstName lastName')
+      .populate('author', 'firstName lastName -_id')
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(limit)
       .exec();
@@ -232,7 +228,7 @@ export class ArticleService {
   async getArticleBySlug(slug: string): Promise<ArticleDocument> {
     const article = await this.articleModel
       .findOneAndUpdate({ slug, isPublished: true }, { $inc: { viewCount: 1 } }, { new: true })
-      .populate('author', 'firstName lastName')
+      .populate('author', 'firstName lastName -_id')
       .exec();
 
     if (!article) {

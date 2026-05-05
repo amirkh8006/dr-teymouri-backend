@@ -93,17 +93,18 @@ export class AdminArticleController {
   @Get()
   @RequirePermissions('admin:articles:read')
   @ApiOperation({ summary: 'دریافت همه مقالات (مدیر)' })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'شماره صفحه' })
+  @ApiQuery({ name: 'skip', required: false, example: 0, description: 'تعداد رکوردهای قابل نادیده گرفتن' })
   @ApiQuery({ name: 'limit', required: false, example: 20, description: 'تعداد در هر صفحه' })
   @ApiQuery({ name: 'search', required: false, example: 'تغذیه', description: 'متن جستجو' })
   async getAllArticles(
-    @Query('page') page?: string,
+    @Query('skip') skip?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
   ) {
-    const pageNum = page ? Number.parseInt(page, 10) : 1;
+    const parsedSkip = skip ? Number.parseInt(skip, 10) : 0;
+    const skipNum = Number.isNaN(parsedSkip) ? 0 : Math.max(parsedSkip, 0);
     const limitNum = limit ? Number.parseInt(limit, 10) : 20;
-    const result = await this.articleService.getAdminArticles(pageNum, limitNum, search);
+    const result = await this.articleService.getAdminArticles(skipNum, limitNum, search);
 
     return {
       statusCode: 200,

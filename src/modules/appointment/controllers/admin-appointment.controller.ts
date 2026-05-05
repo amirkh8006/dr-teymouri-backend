@@ -117,18 +117,19 @@ export class AdminAppointmentController {
    */
   @Get('')
   @RequirePermissions('admin:appointments:read')
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'شماره صفحه' })
+  @ApiQuery({ name: 'skip', required: false, example: 0, description: 'تعداد رکوردهای قابل نادیده گرفتن' })
   @ApiQuery({ name: 'limit', required: false, example: 20, description: 'تعداد در هر صفحه' })
   @ApiQuery({ name: 'status', required: false, example: 'confirmed', description: 'فیلتر بر اساس وضعیت' })
   @ApiOperation({ summary: 'دریافت همه نوبت ها', description: 'دریافت همه نوبت ها با امکان فیلتر وضعیت' })
   async getAllAppointments(
-    @Query('page') page?: string,
+    @Query('skip') skip?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: string,
   ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 20;
-    const result = await this.appointmentService.getAllAppointments(pageNum, limitNum, status as any);
+    const parsedSkip = skip ? Number.parseInt(skip, 10) : 0;
+    const skipNum = Number.isNaN(parsedSkip) ? 0 : Math.max(parsedSkip, 0);
+    const limitNum = limit ? Number.parseInt(limit, 10) : 20;
+    const result = await this.appointmentService.getAllAppointments(skipNum, limitNum, status as any);
 
     return {
       statusCode: 200,

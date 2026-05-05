@@ -207,13 +207,11 @@ export class AppointmentService {
   /**
    * Get all appointments (admin)
    */
-  async getAllAppointments(page: number = 1, limit: number = 20, status?: AppointmentStatus): Promise<any> {
+  async getAllAppointments(skip: number = 0, limit: number = 20, status?: AppointmentStatus): Promise<any> {
     const query: any = {};
     if (status) {
       query.status = status;
     }
-
-    const skip = (page - 1) * limit;
 
     const [appointments, total] = await Promise.all([
       this.appointmentModel
@@ -231,9 +229,8 @@ export class AppointmentService {
       data: appointments,
       pagination: {
         total,
-        page,
+        skip,
         limit,
-        pages: Math.ceil(total / limit),
       },
     };
   }

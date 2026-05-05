@@ -45,7 +45,6 @@ export class RoleService {
         total,
         skip,
         limit,
-        pages: Math.ceil(total / limit),
       },
     };
   }
