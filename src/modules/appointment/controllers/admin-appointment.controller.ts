@@ -29,7 +29,7 @@ export class AdminAppointmentController {
   @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({
     summary: 'ایجاد دسترس پذیری پزشک',
-    description: 'تنظیم اولیه دسترس پذیری پزشک',
+    description: 'تنظیم برنامه هفتگی پزشک با امکان تعریف بازه های مختلف برای هر روز',
   })
   async createDoctorAvailability(
     @Param('doctorId') doctorId: string,
@@ -72,7 +72,7 @@ export class AdminAppointmentController {
   @ApiParam({ name: 'doctorId', example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
   @ApiOperation({
     summary: 'به روزرسانی دسترس پذیری پزشک',
-    description: 'به روزرسانی ساعات کاری، روزهای تعطیل، مدت زمان و حداکثر ظرفیت نوبت',
+    description: 'به روزرسانی برنامه هفتگی، روزهای تعطیل، مدت زمان و حداکثر ظرفیت نوبت',
   })
   async updateDoctorAvailability(
     @Param('doctorId') doctorId: string,

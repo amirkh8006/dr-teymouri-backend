@@ -2,7 +2,11 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException }
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment, AppointmentDocument } from '../schemas/appointment.schema';
-import { DoctorAvailability, DoctorAvailabilityDocument } from '../schemas/doctor-availability.schema';
+import {
+  DoctorAvailability,
+  DoctorAvailabilityDocument,
+  WorkingHoursRange,
+} from '../schemas/doctor-availability.schema';
 import { CreateAppointmentDto, UpdateAppointmentStatusDto } from '../dto/appointment.dto';
 import { CreateDoctorAvailabilityDto, UpdateDoctorAvailabilityDto, AddOffExceptionDto } from '../dto/doctor-availability.dto';
 import { PersianCalendarService } from '../utils/persian-calendar.service';
@@ -22,6 +26,23 @@ interface DaySlots {
   dayOfWeek: number;
   remainingAppointments: number;
   times: AvailableSlot[];
+}
+
+interface WorkingRange {
+  from: number;
+  to: number;
+}
+
+interface NormalizedDailySchedule {
+  dayOfWeek: number;
+  isOff: boolean;
+  workingHours: WorkingRange[];
+}
+
+interface WeeklyScheduleInput {
+  dayOfWeek: number;
+  isOff?: boolean;
+  workingHours?: Array<WorkingRange>;
 }
 
 @Injectable()
@@ -50,6 +71,11 @@ export class AppointmentService {
       throw new NotFoundException('اطلاعات دسترسی پزشک یافت نشد');
     }
 
+    const slotDateTime = this.roundTimeToSlot(appointmentDate, doctorAvailability.appointmentDuration);
+    if (slotDateTime.getTime() !== appointmentDate.getTime()) {
+      throw new ConflictException('این ساعت در بازه نوبت‌دهی پزشک نیست');
+    }
+
     // Check if doctor is available on this day
     if (!this.isDoctorAvailableOnDay(appointmentDate, doctorAvailability)) {
       throw new ConflictException('پزشک در این روز دسترس نیست');
@@ -63,7 +89,7 @@ export class AppointmentService {
     // Check if slot is already full
     const conflictingAppointments = await this.appointmentModel.countDocuments({
       doctor: new Types.ObjectId(doctorId),
-      appointmentDateTime: this.roundTimeToSlot(appointmentDate, doctorAvailability.appointmentDuration),
+      appointmentDateTime: slotDateTime,
       status: { $ne: AppointmentStatus.CANCELLED },
     });
 
@@ -75,7 +101,7 @@ export class AppointmentService {
     const appointment = new this.appointmentModel({
       patient: new Types.ObjectId(patientId),
       doctor: new Types.ObjectId(doctorId),
-      appointmentDateTime: appointmentDate,
+      appointmentDateTime: slotDateTime,
       visitType,
       fullName,
       nationalId,
@@ -116,32 +142,41 @@ export class AppointmentService {
       };
 
       // Generate time slots
-      const { from, to } = doctorAvailability.workingHours;
-      for (let hour = from; hour < to; hour++) {
-        const slotTime = this.buildTehranDateTime(dayInfo.date, hour);
-
-        const isPast = this.persianCalendarService.isPast(slotTime);
-
-        // Count existing appointments at this time
-        const existingAppointments = await this.appointmentModel.countDocuments({
-          doctor: new Types.ObjectId(doctorId),
-          appointmentDateTime: slotTime,
-          status: { $ne: AppointmentStatus.CANCELLED },
-        });
-
-        const availableSpots = isPast ? 0 : doctorAvailability.maxAppointmentsPerSlot - existingAppointments;
-        const choosable = !isPast && availableSpots > 0;
-
-        daySlots.times.push({
-          dateTime: slotTime,
-          time: `${String(hour).padStart(2, '0')}:00`,
-          availableSpots,
-          choosable,
-        });
-
-        daySlots.remainingAppointments += availableSpots;
+      const dayWorkingRanges = this.getWorkingRangesForDate(dayInfo.date, doctorAvailability);
+      if (dayWorkingRanges.length === 0) {
+        continue;
       }
 
+      for (const range of dayWorkingRanges) {
+        for (let minuteOffset = range.from * 60; minuteOffset < range.to * 60; minuteOffset += doctorAvailability.appointmentDuration) {
+          const hour = Math.floor(minuteOffset / 60);
+          const minute = minuteOffset % 60;
+          const slotTime = this.buildTehranDateTime(dayInfo.date, hour, minute);
+
+          const isPast = this.persianCalendarService.isPast(slotTime);
+
+          // Count existing appointments at this time
+          const existingAppointments = await this.appointmentModel.countDocuments({
+            doctor: new Types.ObjectId(doctorId),
+            appointmentDateTime: slotTime,
+            status: { $ne: AppointmentStatus.CANCELLED },
+          });
+
+          const availableSpots = isPast ? 0 : doctorAvailability.maxAppointmentsPerSlot - existingAppointments;
+          const choosable = !isPast && availableSpots > 0;
+
+          daySlots.times.push({
+            dateTime: slotTime,
+            time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+            availableSpots,
+            choosable,
+          });
+
+          daySlots.remainingAppointments += availableSpots;
+        }
+      }
+
+      daySlots.times.sort((left, right) => left.dateTime.getTime() - right.dateTime.getTime());
       result.push(daySlots);
     }
 
@@ -245,10 +280,13 @@ export class AppointmentService {
       throw new ConflictException('اطلاعات دسترسی برای این پزشک قبلاً وجود دارد');
     }
 
+    const weeklySchedule = this.normalizeWeeklySchedule(createDto.weeklySchedule, createDto.offDays, createDto.workingHours);
+
     return this.doctorAvailabilityModel.create({
       doctor: new Types.ObjectId(createDto.doctorId),
-      offDays: createDto.offDays,
-      workingHours: createDto.workingHours,
+      offDays: this.getOffDaysFromWeeklySchedule(weeklySchedule, createDto.offDays),
+      workingHours: this.getLegacyWorkingHoursSummary(weeklySchedule, createDto.workingHours),
+      weeklySchedule,
       appointmentDuration: createDto.appointmentDuration || 30,
       maxAppointmentsPerSlot: createDto.maxAppointmentsPerSlot || 1,
     });
@@ -276,10 +314,19 @@ export class AppointmentService {
       throw new NotFoundException('اطلاعات دسترسی پزشک یافت نشد');
     }
 
-    if (updateDto.offDays) availability.offDays = updateDto.offDays;
-    if (updateDto.workingHours) availability.workingHours = updateDto.workingHours;
-    if (updateDto.appointmentDuration) availability.appointmentDuration = updateDto.appointmentDuration;
-    if (updateDto.maxAppointmentsPerSlot) availability.maxAppointmentsPerSlot = updateDto.maxAppointmentsPerSlot;
+    const weeklySchedule = this.normalizeWeeklySchedule(updateDto.weeklySchedule, updateDto.offDays, updateDto.workingHours);
+
+    if (weeklySchedule.length > 0) {
+      availability.weeklySchedule = weeklySchedule;
+      availability.offDays = this.getOffDaysFromWeeklySchedule(weeklySchedule, updateDto.offDays);
+      availability.workingHours = this.getLegacyWorkingHoursSummary(weeklySchedule, updateDto.workingHours);
+    } else {
+      if (updateDto.offDays) availability.offDays = updateDto.offDays;
+      if (updateDto.workingHours) availability.workingHours = updateDto.workingHours;
+    }
+
+    if (updateDto.appointmentDuration !== undefined) availability.appointmentDuration = updateDto.appointmentDuration;
+    if (updateDto.maxAppointmentsPerSlot !== undefined) availability.maxAppointmentsPerSlot = updateDto.maxAppointmentsPerSlot;
     if (updateDto.isActive !== undefined) availability.isActive = updateDto.isActive;
 
     return availability.save();
@@ -307,30 +354,11 @@ export class AppointmentService {
   // ============= PRIVATE HELPER METHODS =============
 
   private isDoctorAvailableOnDay(date: Date, availability: DoctorAvailabilityDocument): boolean {
-    const dayOfWeek = this.persianCalendarService.getPersianWeekdayIndex(date);
-
-    // Check if day is off
-    if (availability.offDays.includes(dayOfWeek)) {
-      return false;
-    }
-
-    // Check if there's an off exception for this date
-    const dateString = this.persianCalendarService.getTehranDateIso(date);
-    for (const exception of availability.offExceptions) {
-      const exceptionDateString = this.persianCalendarService.getTehranDateIso(exception.date);
-      if (exceptionDateString === dateString) {
-        return false;
-      }
-    }
-
-    return true;
+    return this.getWorkingRangesForDate(date, availability).length > 0;
   }
 
   private isTimeWithinWorkingHours(dateTime: Date, availability: DoctorAvailabilityDocument): boolean {
-    const hour = this.getTehranHour(dateTime);
-    const { from, to } = availability.workingHours;
-
-    return hour >= from && hour < to;
+    return this.getMatchingWorkingRange(dateTime, availability) !== null;
   }
 
   private roundTimeToSlot(date: Date, durationMinutes: number): Date {
@@ -342,6 +370,22 @@ export class AppointmentService {
 
   private buildTehranDateTime(baseDate: Date, hour: number, minute: number = 0): Date {
     return new Date(baseDate.getTime() + (hour * 60 + minute) * 60 * 1000);
+  }
+
+  private getTehranMinute(date: Date): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Tehran',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    for (const part of parts) {
+      if (part.type === 'minute') {
+        return Number.parseInt(part.value, 10);
+      }
+    }
+
+    return date.getMinutes();
   }
 
   private getTehranHour(date: Date): number {
@@ -358,5 +402,137 @@ export class AppointmentService {
     }
 
     return date.getHours();
+  }
+
+  private normalizeWeeklySchedule(
+    weeklySchedule?: WeeklyScheduleInput[],
+    offDays?: number[],
+    workingHours?: WorkingHoursRange,
+  ): NormalizedDailySchedule[] {
+    if (weeklySchedule?.length) {
+      return weeklySchedule
+        .map((daySchedule) => ({
+          dayOfWeek: daySchedule.dayOfWeek,
+          isOff: Boolean(daySchedule.isOff),
+          workingHours: this.normalizeWorkingRanges(daySchedule.workingHours),
+        }))
+        .filter((daySchedule) => daySchedule.dayOfWeek >= 0 && daySchedule.dayOfWeek <= 6)
+        .sort((left, right) => left.dayOfWeek - right.dayOfWeek);
+    }
+
+    if (offDays?.length || workingHours) {
+      const normalizedOffDays = new Set(offDays ?? []);
+      const schedule: NormalizedDailySchedule[] = [];
+
+      for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+        const isOff = normalizedOffDays.has(dayOfWeek);
+        schedule.push({
+          dayOfWeek,
+          isOff,
+          workingHours: isOff || !workingHours ? [] : [{ from: workingHours.from, to: workingHours.to }],
+        });
+      }
+
+      return schedule;
+    }
+
+    return [];
+  }
+
+  private normalizeWorkingRanges(workingHours?: Array<Pick<WorkingHoursRange, 'from' | 'to'>>): WorkingRange[] {
+    if (!workingHours?.length) {
+      return [];
+    }
+
+    return workingHours
+      .map((range) => ({ from: range.from, to: range.to }))
+      .filter((range) => range.from < range.to)
+      .sort((left, right) => left.from - right.from || left.to - right.to);
+  }
+
+  private getWorkingRangesForDate(date: Date, availability: DoctorAvailabilityDocument): WorkingRange[] {
+    const dayOfWeek = this.persianCalendarService.getPersianWeekdayIndex(date);
+    const dateString = this.persianCalendarService.getTehranDateIso(date);
+
+    for (const exception of availability.offExceptions ?? []) {
+      const exceptionDateString = this.persianCalendarService.getTehranDateIso(exception.date);
+      if (exceptionDateString === dateString) {
+        return [];
+      }
+    }
+
+    const weeklySchedule = availability.weeklySchedule ?? [];
+    const configuredDay = weeklySchedule.find((daySchedule) => daySchedule.dayOfWeek === dayOfWeek);
+    if (configuredDay) {
+      if (configuredDay.isOff) {
+        return [];
+      }
+
+      return this.normalizeWorkingRanges(configuredDay.workingHours);
+    }
+
+    if (availability.offDays?.includes(dayOfWeek)) {
+      return [];
+    }
+
+    if (availability.workingHours) {
+      return this.normalizeWorkingRanges([availability.workingHours]);
+    }
+
+    return [];
+  }
+
+  private getMatchingWorkingRange(dateTime: Date, availability: DoctorAvailabilityDocument): WorkingRange | null {
+    const hour = this.getTehranHour(dateTime);
+    const minute = this.getTehranMinute(dateTime);
+    const totalMinutes = hour * 60 + minute;
+    const slotDuration = availability.appointmentDuration;
+
+    for (const range of this.getWorkingRangesForDate(dateTime, availability)) {
+      const rangeStart = range.from * 60;
+      const rangeEnd = range.to * 60;
+
+      if (totalMinutes < rangeStart || totalMinutes >= rangeEnd) {
+        continue;
+      }
+
+      if ((totalMinutes - rangeStart) % slotDuration !== 0) {
+        continue;
+      }
+
+      return range;
+    }
+
+    return null;
+  }
+
+  private getOffDaysFromWeeklySchedule(weeklySchedule: NormalizedDailySchedule[], fallbackOffDays?: number[]): number[] {
+    if (weeklySchedule.length > 0) {
+      return weeklySchedule.filter((daySchedule) => daySchedule.isOff || daySchedule.workingHours.length === 0).map((daySchedule) => daySchedule.dayOfWeek);
+    }
+
+    return fallbackOffDays ?? [];
+  }
+
+  private getLegacyWorkingHoursSummary(
+    weeklySchedule: NormalizedDailySchedule[],
+    fallbackWorkingHours?: WorkingHoursRange,
+  ): WorkingHoursRange | undefined {
+    if (fallbackWorkingHours) {
+      return fallbackWorkingHours;
+    }
+
+    for (const daySchedule of weeklySchedule) {
+      if (daySchedule.isOff) {
+        continue;
+      }
+
+      const firstRange = daySchedule.workingHours[0];
+      if (firstRange) {
+        return { from: firstRange.from, to: firstRange.to };
+      }
+    }
+
+    return undefined;
   }
 }

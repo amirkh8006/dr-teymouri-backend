@@ -3,7 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 import { User } from '../../user/schemas/user.schema';
 
 @Schema({ _id: false, versionKey: false })
-export class WorkingHours {
+export class WorkingHoursRange {
   @Prop({ required: true, min: 0, max: 23 })
   from!: number; // Start hour (0-23)
 
@@ -11,7 +11,21 @@ export class WorkingHours {
   to!: number; // End hour (0-23)
 }
 
-export const WorkingHoursSchema = SchemaFactory.createForClass(WorkingHours);
+export const WorkingHoursRangeSchema = SchemaFactory.createForClass(WorkingHoursRange);
+
+@Schema({ _id: false, versionKey: false })
+export class WeeklyAvailabilityDay {
+  @Prop({ required: true, min: 0, max: 6 })
+  dayOfWeek!: number;
+
+  @Prop({ default: false })
+  isOff!: boolean;
+
+  @Prop({ type: [WorkingHoursRangeSchema], default: [] })
+  workingHours!: WorkingHoursRange[];
+}
+
+export const WeeklyAvailabilityDaySchema = SchemaFactory.createForClass(WeeklyAvailabilityDay);
 
 @Schema({ _id: false, versionKey: false })
 export class OffException {
@@ -31,11 +45,14 @@ export class DoctorAvailability {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true, unique: true })
   doctor!: Types.ObjectId; // Reference to User with role=doctor
 
-  @Prop({ type: [Number], default: [0, 1] }) // 0=Saturday, 6=Friday in JavaScript
+  @Prop({ type: [Number], default: [] }) // Legacy/off-day summary, kept for compatibility
   offDays!: number[]; // Days of week when doctor is off
 
-  @Prop({ type: WorkingHoursSchema, required: true })
-  workingHours!: WorkingHours; // Working hours per day
+  @Prop({ type: WorkingHoursRangeSchema, required: false })
+  workingHours?: WorkingHoursRange; // Legacy summary working hours
+
+  @Prop({ type: [WeeklyAvailabilityDaySchema], default: [] })
+  weeklySchedule!: WeeklyAvailabilityDay[]; // Weekly availability by day
 
   @Prop({ required: true, default: 30, min: 15, max: 120 })
   appointmentDuration!: number; // Duration in minutes
