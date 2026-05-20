@@ -164,10 +164,11 @@ export class AppointmentService {
 
           const availableSpots = isPast ? 0 : doctorAvailability.maxAppointmentsPerSlot - existingAppointments;
           const choosable = !isPast && availableSpots > 0;
+          const slotEndTime = new Date(slotTime.getTime() + doctorAvailability.appointmentDuration * 60 * 1000);
 
           daySlots.times.push({
             dateTime: slotTime,
-            time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+            time: `${this.formatTehranTime(slotTime)} - ${this.formatTehranTime(slotEndTime)}`,
             availableSpots,
             choosable,
           });
@@ -402,6 +403,12 @@ export class AppointmentService {
     }
 
     return date.getHours();
+  }
+
+  private formatTehranTime(date: Date): string {
+    const hour = this.getTehranHour(date);
+    const minute = this.getTehranMinute(date);
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
 
   private normalizeWeeklySchedule(
