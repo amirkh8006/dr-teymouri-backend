@@ -118,8 +118,7 @@ export class AppointmentService {
       // Generate time slots
       const { from, to } = doctorAvailability.workingHours;
       for (let hour = from; hour < to; hour++) {
-        const slotTime = new Date(dayInfo.date);
-        slotTime.setHours(hour, 0, 0, 0);
+        const slotTime = this.buildTehranDateTime(dayInfo.date, hour);
 
         const isPast = this.persianCalendarService.isPast(slotTime);
 
@@ -328,7 +327,7 @@ export class AppointmentService {
   }
 
   private isTimeWithinWorkingHours(dateTime: Date, availability: DoctorAvailabilityDocument): boolean {
-    const hour = dateTime.getHours();
+    const hour = this.getTehranHour(dateTime);
     const { from, to } = availability.workingHours;
 
     return hour >= from && hour < to;
@@ -339,5 +338,25 @@ export class AppointmentService {
     const ms = durationMinutes * 60 * 1000;
     rounded.setTime(Math.floor(rounded.getTime() / ms) * ms);
     return rounded;
+  }
+
+  private buildTehranDateTime(baseDate: Date, hour: number, minute: number = 0): Date {
+    return new Date(baseDate.getTime() + (hour * 60 + minute) * 60 * 1000);
+  }
+
+  private getTehranHour(date: Date): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Tehran',
+      hour: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    for (const part of parts) {
+      if (part.type === 'hour') {
+        return Number.parseInt(part.value, 10);
+      }
+    }
+
+    return date.getHours();
   }
 }
