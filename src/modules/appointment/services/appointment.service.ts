@@ -274,8 +274,8 @@ export class AppointmentService {
   /**
    * Create doctor availability
    */
-  async createDoctorAvailability(createDto: CreateDoctorAvailabilityDto): Promise<DoctorAvailabilityDocument> {
-    const existing = await this.doctorAvailabilityModel.findOne({ doctor: new Types.ObjectId(createDto.doctorId) });
+  async createDoctorAvailability(doctorId: string, createDto: CreateDoctorAvailabilityDto): Promise<DoctorAvailabilityDocument> {
+    const existing = await this.doctorAvailabilityModel.findOne({ doctor: new Types.ObjectId(doctorId) });
     if (existing) {
       throw new ConflictException('اطلاعات دسترسی برای این پزشک قبلاً وجود دارد');
     }
@@ -283,7 +283,7 @@ export class AppointmentService {
     const weeklySchedule = this.normalizeWeeklySchedule(createDto.weeklySchedule, createDto.offDays, createDto.workingHours);
 
     return this.doctorAvailabilityModel.create({
-      doctor: new Types.ObjectId(createDto.doctorId),
+      doctor: new Types.ObjectId(doctorId),
       offDays: this.getOffDaysFromWeeklySchedule(weeklySchedule, createDto.offDays),
       workingHours: this.getLegacyWorkingHoursSummary(weeklySchedule, createDto.workingHours),
       weeklySchedule,

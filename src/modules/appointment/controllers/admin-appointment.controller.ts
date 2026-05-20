@@ -35,10 +35,7 @@ export class AdminAppointmentController {
     @Param('doctorId') doctorId: string,
     @Body() createDto: CreateDoctorAvailabilityDto,
   ) {
-    const availability = await this.appointmentService.createDoctorAvailability({
-      ...createDto,
-      doctorId,
-    });
+    const availability = await this.appointmentService.createDoctorAvailability(doctorId, createDto);
 
     return {
       statusCode: 201,

@@ -52,11 +52,6 @@ export class OffExceptionDto {
 }
 
 export class CreateDoctorAvailabilityDto {
-  @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ example: '6649f4db5cf6b2c01f3d7b21', description: 'شناسه کاربر پزشک' })
-  doctorId!: string; // Doctor (User) ID
-
   @IsOptional()
   @IsArray()
   @IsInt({ each: true })
